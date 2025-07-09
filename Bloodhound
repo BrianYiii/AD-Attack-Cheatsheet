@@ -1,0 +1,29 @@
+-------------------------------
+       Data Collection
+-------------------------------
+
+bloodhound-python -d <domain> -u <username> -p <password> -c All
+bloodhound-python -d <domain> -ns <dc ip> -u <username> -p <password> -c All
+
+-------------------------------
+Data Collection - Kerberos AUth
+-------------------------------
+bloodhound-python -d <domain> -ns <dc ip> -u <username> -p <password> -c All -k -no-pass
+bloodhound-python -d <domain> -ns <dc ip> -u <username> -p <password> -c All -k -no-pass -dc <dc hostname>
+
+
+-------------------------------
+Data Collection - SharpHound
+-------------------------------
+Location: 
+- /usr/lib/bloodhound/resources/app/Collectors/SharpHound.exe
+
+.\SharpHound.exe -c all
+
+- /usr/lib/bloodhound/resources/app/Collectors/SharpHound.ps1
+
+Import-Module .\SharpHound.ps1
+Invoke-BloodHound -CollectionMethods All
+Invoke-BloodHound -CollectionMethods All -NoSaveCache (without outputting the cache file to disk)
+
+
